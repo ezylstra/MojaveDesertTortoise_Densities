@@ -89,7 +89,6 @@
 
     precip.s <- scale(surveys$precip.s)        #Summer precip (May-Oct; dry season), 30-year normals (mm)
     precip.w <- scale(surveys$precip.w)        #Winter precip (Nov-Apr; wet season), 30-year normals (mm)
-    temp.max <- scale(surveys$temp.max)        #Temperature in warmest month, 30-year normals (degC)
     elev <- scale(surveys$elev)                #Elevation (m)
     slope <- scale(log(surveys$slope))         #Slope (degree)
     aspect.n <- scale(surveys$aspect.n)        #Northness (1 = north; -1 = south)
@@ -97,11 +96,8 @@
     rough <- scale(log(surveys$rough))         #Average surface roughness (ratio of area to planimetric area)
     wash <- scale(log(surveys$wash))           #Proportion of grid cell classified as "wash"
     bedrock <- scale(log(surveys$bedrock))     #Depth to bedrock (cm)
-    soilbulk <- scale(surveys$soilbulk)        #Soil bulk density (kg/m3)
-    prock <- scale(surveys$prock)              #Percent rock >254 mm
     veg.p <- scale(log(surveys$veg.p))         #Perennial vegetation (NDVI value in very dry year [2019])
     veg.a <- scale(surveys$veg.a)              #Annual plant (forage) potential (comparison of MODIS values in dry, wet years)
-    road.m <- scale(log(surveys$road.m))       #Distance to minor road (m)
     road.a <- scale(log(surveys$road.a))       #Distance to any road (m)
     annprecip <- scale(surveys$pptOM.perc)     #Precipitation during previous winter (Oct-Mar, % 30yr norms) -- time varying
     
@@ -109,11 +105,11 @@
 
   # Evaluate potential correlations:
     
-    round(cor(cbind(precip.w,precip.s,temp.max,
+    round(cor(cbind(precip.w,precip.s,
                     elev,slope,rough,aspect.n,aspect.e,
-                    wash,bedrock,prock,soilbulk,
+                    wash,bedrock,
                     veg.p,veg.a,
-                    road.m,road.a)),3)
+                    road.a)),3)
 
     round(cor(cbind(precip.w,precip.s,elev,rough,aspect.n,aspect.e,
                     wash,bedrock,veg.a,road.a)),3)  
@@ -175,15 +171,15 @@
   # Calculate means of scaled, abundance-related covariates within each recovery unit
     
     segsc <- data.frame(recovID=as.numeric(as.factor(surveys$recovID)),
-                        precip.w,precip.s,temp.max,elev,slope,rough,aspect.n,aspect.e,  
-                        wash,bedrock,prock,soilbulk,veg.p,veg.a,road.m,road.a)
+                        precip.w,precip.s,elev,slope,rough,aspect.n,aspect.e,  
+                        wash,bedrock,veg.p,veg.a,road.a)
     segCov_RUmeans <- ddply(segsc,.(recovID),summarize, 
-                            precip.w=mean(precip.w),precip.s=mean(precip.s),temp.max=mean(temp.max),
+                            precip.w=mean(precip.w),precip.s=mean(precip.s),
                             elev=mean(elev),slope=mean(slope),rough=mean(rough),
                             aspect.n=mean(aspect.n),aspect.e=mean(aspect.e),  
-                            wash=mean(wash),bedrock=mean(bedrock),prock=mean(prock),
-                            soilbulk=mean(soilbulk),veg.p=mean(veg.p),veg.a=mean(veg.a),
-                            road.m=mean(road.m),road.a=mean(road.a))
+                            wash=mean(wash),bedrock=mean(bedrock),
+                            veg.p=mean(veg.p),veg.a=mean(veg.a),
+                            road.a=mean(road.a))
     
   # Create dataframe with just those covariates selected for cov_lam above
     
