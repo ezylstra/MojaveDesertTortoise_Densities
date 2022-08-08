@@ -1,7 +1,7 @@
 data {
   
   // Dimensions of data
-	int<lower=1> n_transects;  // total number of transects
+  int<lower=1> n_transects;  // total number of transects
   int<lower=1> n_segments;   // total number of segments
   int<lower=1> n_segments1;  // number of segments with at least one detection
   int<lower=1> n_years;      // number of years included in analyses
@@ -21,18 +21,18 @@ data {
   matrix[n_telem_obs, n_cov_telem] cov_telem;  // covariate values for each observation of a radiomarked tortoise (to model availability) 
   
   // Indices
-	int<lower=1> transectID[n_segments];                   // transect ID (index) associated with each segment
+  int<lower=1> transectID[n_segments];                   // transect ID (index) associated with each segment
   int<lower=1> recovID[n_segments];                      // recovery unit ID (index) associated with each segment
   int<lower=1> year[n_segments];                         // year (index) associated with each segment
   vector[n_years] yeartrend;                             // vector of year index, minYear(1):maxYear(18)
-	int<lower=0,upper=1> lateyrs[n_segments];              // indicator for survey years 2004-2018
+  int<lower=0,upper=1> lateyrs[n_segments];              // indicator for survey years 2004-2020
   int<lower=1,upper=n_rmtorts> rmtortID[n_telem_obs];    // tortoise ID (index) associated with each telemetry observation
   
   // Response data
   int<lower=0,upper=1> y_telem[n_telem_obs];  // telemetered tortoise visible? (1/0)
   int<lower=0> n[n_segments];                 // number of segments surveyed
   matrix<lower=0>[n_segments1,max(n)] y;      // distances of observed tortoises for segments with >=1 detection 
-										                          // [replaced NAs with 0s, as we loop over the number of observations on each segment]
+                                              // [replaced NAs with 0s, as we loop over the number of observations on each segment]
   vector<lower=0>[n_segments] L;              // length of each segment (m)
   real<lower=0> W;                            // max observation distance (when data truncated, as they are here, W = T)
   real<lower=0> T;                            // truncation distance
@@ -49,7 +49,7 @@ parameters {
 
   // Std normal variates (unscaled random intercepts)
   matrix[n_recov,n_years] recov_l_raw;     // trend random effects     
-	vector[n_transects]     tran_l_raw;      // transect-level random effects in abundance model
+  vector[n_transects]     tran_l_raw;      // transect-level random effects in abundance model
   vector[n_segments]      seg_l_raw;       // segment-level random effects in abundance model (only needed for years 2004-2018)
   vector[n_segments]      detect_raw;      // segment-level random effects in detection model
   vector[n_rmtorts]       g0_raw;          // random effects for radio-marked tortoises
@@ -69,7 +69,7 @@ parameters {
   
   // Variance components (as std dev)
   real<lower=0> sd_recov;
-	real<lower=0> sd_tran;
+  real<lower=0> sd_tran;
   real<lower=0> sd_seg;
   real<lower=0> sd_detect;
   real<lower=0> sd_g0;
@@ -90,12 +90,12 @@ transformed parameters {
   vector[n_rmtorts] randtort;
    
   // Random effect specification (throughout): using SD * raw standard-normal variate 
-	// This greatly improves mixing
+  // This greatly improves mixing
 
   // Availability (estimated from telemetry data; g0 are predicted values for each segment)
   randtort = sd_g0 * g0_raw;
   for(i in 1:n_telem_obs)  
-		telem_p[i] = inv_logit(logit(mu_g0) + cov_telem[i] * beta_g0 + randtort[rmtortID[i]]);
+    telem_p[i] = inv_logit(logit(mu_g0) + cov_telem[i] * beta_g0 + randtort[rmtortID[i]]);
   g0 = inv_logit(logit(mu_g0) + cov_g0 * beta_g0);
 
   // SD in half-normal detection function
@@ -110,8 +110,8 @@ transformed parameters {
   // Tortoise density: covariate and random effects in abundance model
   for (i in 1:n_segments) 
     seg_l_mu[i] = recov_l[recovID[i],year[i]];
-	for (i in 1:n_segments)
-		seg_l[i] = seg_l_mu[i] + cov_lam[i] * beta_lam + sd_tran * tran_l_raw[transectID[i]] + lateyrs[i] * sd_seg * seg_l_raw[i]; 
+  for (i in 1:n_segments)
+    seg_l[i] = seg_l_mu[i] + cov_lam[i] * beta_lam + sd_tran * tran_l_raw[transectID[i]] + lateyrs[i] * sd_seg * seg_l_raw[i]; 
 
   // Poisson intensity for true abundance 
   lambda = (2 * W * L) .* exp(seg_l - log(1000000));  //need factor of 1,000,000 to change units from m2 to km2
@@ -125,7 +125,7 @@ model {
 
   // Priors on variance components
   target += cauchy_lpdf(sd_recov  | 0, 1);
-	target += cauchy_lpdf(sd_tran   | 0, 1);
+  target += cauchy_lpdf(sd_tran   | 0, 1);
   target += cauchy_lpdf(sd_seg    | 0, 1);
   target += cauchy_lpdf(sd_detect | 0, 1);
   target += cauchy_lpdf(sd_g0     | 0, 1);
@@ -138,7 +138,7 @@ model {
 
   // Unscaled random intercepts
   target += std_normal_lpdf(to_vector(recov_l_raw));
-	target += std_normal_lpdf(tran_l_raw);
+  target += std_normal_lpdf(tran_l_raw);
   target += std_normal_lpdf(seg_l_raw);
   target += std_normal_lpdf(detect_raw);
   target += std_normal_lpdf(g0_raw);
@@ -149,7 +149,7 @@ model {
   // Abundance submodel
   // Replacing Poisson-binomial mixture with thinned Poisson process (mean = lambda*p)
   for (i in 1:n_segments)
-	target += poisson_lpmf(n[i] | lambda_p[i]);
+    target += poisson_lpmf(n[i] | lambda_p[i]);
 
   // Distance detection submodel
   for (i in 1:n_segments1)
@@ -175,15 +175,15 @@ generated quantities {
 
   // Calculate mean annual density in each recovery unit (only in years unit was surveyed)
   for(i in 1:n_preds)
-	D_survyrs[i] = exp(log(mu_recov[recov_pred[i]]) + RUmeans[recov_pred[i]] * beta_lam
-		           + trend[recov_pred[i]] * yr_pred[i] + sd_recov * recov_l_raw[recov_pred[i],yr_pred[i]]); 
+    D_survyrs[i] = exp(log(mu_recov[recov_pred[i]]) + RUmeans[recov_pred[i]] * beta_lam
+		       + trend[recov_pred[i]] * yr_pred[i] + sd_recov * recov_l_raw[recov_pred[i],yr_pred[i]]); 
 
   // Fit statistics
   for(i in 1:n_segments)
   {
-	E_obs[i] = pow((n[i] - lambda_p[i]), 2) / (lambda_p[i] + 0.5);
-	n_new[i] = poisson_rng(lambda_p[i]);
-	E_new[i] = pow((n_new[i] - lambda_p[i]), 2) / (lambda_p[i] + 0.5);
+     E_obs[i] = pow((n[i] - lambda_p[i]), 2) / (lambda_p[i] + 0.5);
+     n_new[i] = poisson_rng(lambda_p[i]);
+     E_new[i] = pow((n_new[i] - lambda_p[i]), 2) / (lambda_p[i] + 0.5);
   }
 
   fit_obs = sum(E_obs[]);
