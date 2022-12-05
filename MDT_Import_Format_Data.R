@@ -4,15 +4,12 @@
 
  ## Project: MDT line-distance sampling - estimating density (spatial variation and trends)
 
-  # Model structure adapted from Chelgren et al. 2011, Herpetol. Conserv. Biol. 6:175-190
-  # and Shirk et al. 2014, Diversity and Distributions 20:1186-1199
-
  ## Relevant files: 
 
-    # 1. MDT_Import_Format_Data.R -- import all the files needed for analysis, format data, and create MDT_Data.Rdata
-    # 2. MDT_DensityModel.R -- run model in STAN, summarize results, produce figures (study area map, trends)
-    # 3. MDT_DensityModel.stan -- STAN model
-    # 4. MDT_DensityModel_Predictions.R -- predict density of tortoises across their range (produce heat map)
+  # 1. MDT_Import_Format_Data.R -- import all the files needed for analysis, format data, and create MDT_Data.Rdata
+  # 2. MDT_DensityModel.R -- run model in STAN, summarize results, produce figures (study area map, trends)
+  # 3. MDT_DensityModel.stan -- STAN model
+  # 4. MDT_DensityModel_Predictions.R -- predict density of tortoises across their range (produce heat map)
 
 #===============================================================================================# 
 
@@ -31,8 +28,6 @@
     library(raster)
     library(rgdal)
 
-  # rm(list=ls())
-  
 #-----------------------------------------------------------------------------------------------# 
 # Import data
 #-----------------------------------------------------------------------------------------------# 
@@ -49,13 +44,14 @@
     live_orig <- read.csv('TortoiseData/Tort_Obs_Live.csv',header=TRUE,na.strings=c("NA",""),strip.white=TRUE)
     live_1921 <- read.csv('TortoiseData/Tort_Obs_Live_2019-2021.csv',header=TRUE,na.strings=c("NA",""),strip.white=TRUE)
     
-    # Recovery units associated with established strata (or TCAs)
+    #Recovery units associated with established strata (or TCAs)
     ru <- read.csv('TortoiseData/RUs_TCAs.csv',header=TRUE,strip.white=TRUE)
     
   # Covariate data
     
     precip.s <- raster('Covariates/30yr_may_oct_prcp_mm.tif')            #Summer precip (May-Oct, mm), 30yr norms
     precip.w <- raster('Covariates/30yr_nov_apr_prcp_mm.tif')            #Winter precip (Nov-Apr, mm), 30yr norms
+    temp.max <- raster('Covariates/max_temp_warmest_month.tif')          #Maximum temperatures (degC), warmest month, 30yr norms
     elev <- raster('Covariates/avg_elevation.tif')                       #Elevation (m)
     slope <- raster('Covariates/avg_slope.tif')                          #Slope (degrees)
     north <- raster('Covariates/avg_northness.tif')                      #Aspect:northness 
@@ -63,8 +59,11 @@
     rough <- raster('Covariates/average_surface_roughness_snapped.tif')  #Average surface roughness
     wash <- raster('Covariates/wash_proportion.tif')                     #Wash density (proportion of each pixel predicted to be "wash")
     bedrock <- raster('Covariates/bedrock_depth.tif')                    #Depth to bedrock (cm)
+    soilbulk <- raster('Covariates/soil_bulk_density.tif')               #Soil bulk density
+    prock <- raster('Covariates/pct_rocks_gt254mm.tif')                  #Percent rock >254 mm
     veg.p <- raster('Covariates/perennial_vegetation.tif')               #Perennial plant cover: NDVI values in 2019 (15 Jun - 31 Aug), very dry year 
     veg.a <- raster('Covariates/annProx_snapped.tif')                    #Annual plant growth potential (MODIS, compare wet(2005)-dry(2002) years)
+    road.m <- raster('Covariates/dist_minor_road.tif')                   #Distance to minor road (m)
     road.a <- raster('Covariates/dist_road.tif')                         #Distance to any road (m)
     
     # Winter precipitation data (Oct-Mar preceding each survey, mm)
@@ -104,11 +103,11 @@
     tcas <- spTransform(tcas,crs(east)) 
 
 #-----------------------------------------------------------------------------------------------# 
-# Establish start and end years for analysis
+# Establish start and end years
 #-----------------------------------------------------------------------------------------------#  
-
-  minYear <- 2001
-  maxYear <- 2020    
+  
+    minYear <- 2001
+    maxYear <- 2020    
     
 #-----------------------------------------------------------------------------------------------# 
 # Remove data from Upper Virgin River (UVR) recovery unit and a couple smaller regions
@@ -116,7 +115,7 @@
   
   # Upper Virgin River
   
-    # Remove data from survey data and live tortoise observation dataset
+    #Remove data from survey data and live tortoise observation dataset
     allSurveys_orig <- allSurveys_orig[allSurveys_orig$stratum!='RC',]
     live_orig <- live_orig[live_orig$segmentID %in% allSurveys_orig$segmentID,]
     
@@ -124,7 +123,7 @@
     g0obs_orig <- g0obs_orig[g0obs_orig$G0_site!='RC',]
     
   # Non_PI and Non_FK (few surveys in Searchlight and Red Mountain, respectively)
-    
+
     allSurveys_orig <- allSurveys_orig[!allSurveys_orig$stratum %in% c('Non_PI','Non_FK'),]
     
 #-----------------------------------------------------------------------------------------------# 
@@ -132,7 +131,7 @@
 #-----------------------------------------------------------------------------------------------#  
   
   # Survey data
-    
+   
     allSurveys_orig <- allSurveys_orig[,c('year','stratum','transectID','segmentID','date_',
                                           'seg_length','group','start_lead','st_wp_sequ','end_wp_seq',
                                           'start_east','start_nort','end_eastin','end_northi')]
@@ -144,7 +143,7 @@
                                                           'end_wp_seq','start_easting','start_northing',
                                                           'end_easting','end_northing')
     allSurveys <- rbind(allSurveys_orig,allSurveys_1921)
-    # #check:
+    # Check:
     # summary(allSurveys[,c(1,5,6,11:14)])
     # summary(allSurveys_orig[,c(1,5,6,11:14)])
 
@@ -165,12 +164,12 @@
     g0obs <- g0obs[g0obs$year_ %in% 2001:2020,]
 
 #-----------------------------------------------------------------------------------------------# 
-# Calculate midpoint of each survey segment
+# Calculate midpoint of each segment
 #-----------------------------------------------------------------------------------------------#  
   
   allSurveys$mid_easting <- round((allSurveys$start_easting + allSurveys$end_easting)/2)
   allSurveys$mid_northing <- round((allSurveys$start_northing + allSurveys$end_northing)/2)
-
+        
 #-----------------------------------------------------------------------------------------------# 
 # Add recovery unit to survey data, live observations
 #-----------------------------------------------------------------------------------------------#     
@@ -237,13 +236,14 @@
   
   # Make sure that all sites in g0obs are in g0sites
   
-    # Should return "character(0)" if all sites in g0obs are in g0sites
+    #Should return "character(0)" if all sites in g0obs are in g0sites
     unique(g0obs$G0_site[!g0obs$G0_site %in% g0sites$G0_site]) 
     
-  # Add site UTMs and Oct-Mar precipitation normals to g0obs
+  # Add site UTMs, max temp normals, and Oct-Mar precipitation normals to g0obs
 
     g0sites <- g0sites[,c('G0_site','Easting','Northing')]
     g0locs <- SpatialPointsDataFrame(coords=g0sites[,2:3],proj4string=crs(ppt.octmar),data=g0sites)
+    g0sites$temp.max <- extract(temp.max,g0locs)
     g0sites$ppt.norm <- extract(ppt.octmar,g0locs)
     g0obs <- join(g0obs,g0sites,by='G0_site',type='left')
 
@@ -252,7 +252,7 @@
     # Check that both sets of data include the same sites
     all.equal(sort(ppt.g0$g0site),sort(unique(g0obs$G0_site)))
     
-    #  Clean up yearly precipitation data and put in long form
+    # Clean up yearly precipitation data and put in long form
     ppt.g0 <- ppt.g0[,c(1,5:ncol(ppt.g0))]
     names(ppt.g0) <- c('G0_site',paste('ppt',2001:2020,sep='.'))
     ppt.g0.long <- melt(ppt.g0,id.vars='G0_site',variable.name='ppt.yr',value.name='ppt')
@@ -264,10 +264,11 @@
   # Calculate annual % of 30-yr Oct-Mar precipitation norms 
     
     g0obs$pptOM.perc <- g0obs$ppt/g0obs$ppt.norm*100
+    # summary(g0obs$pptOM.perc) #ranges from 7-315%
 
   # Keep only the columns we'll need and rename
     
-    g0obs <- g0obs[,c('tortid','G0_site','Easting','Northing','obsdate','season','doy','visible','ppt','ppt.norm','pptOM.perc')]
+    g0obs <- g0obs[,c('tortid','G0_site','Easting','Northing','temp.max','obsdate','season','doy','visible','ppt','ppt.norm','pptOM.perc')]
     names(g0obs)[c(2:4)] <- c('site','east','north')  
 
 #-----------------------------------------------------------------------------------------------# 
@@ -282,7 +283,7 @@
     
     live$mcl_greater_180[which(live$mcl_mm>=180)] <- 'yes'
     
-  # Remove unnecessary variables and rename columns
+  # Remove unnecessary variables (keeping mcl variables and sex so that we could subset data by either) and rename columns
       
     live <- live[,names(live) %in% c('segmentID','year_','perp_distance_m',
                                      'sex','mcl_mm','mcl_greater_180'),]
@@ -297,7 +298,7 @@
     
     # If truncating, set Trunc = W = truncation distance (Eguchi and Gerrodette 2009)
     # If not truncating, set W = maxDist (max. perpendicular distance). 
-    # Note: need to change the likelihood in STAN model if we want to do this!
+    #Note: need to change the likelihood in STAN model if we want to do this!
     
     Trunc <- W <- 20   
     # nrow(live) #5647
@@ -305,7 +306,7 @@
     # nrow(live) #5392 (truncating 4.5% of observations)
     
     liveyr <- ddply(live,.(season),summarize,ndetects=length(dist))
-    summary(liveyr) #69-542 torts detected (within truncation distance) each year
+    summary(liveyr) #69-542 torts detected (within trunction distance) each year
     
     live <- live[,c('segmentID','dist')]
     
@@ -333,7 +334,7 @@
 
   # First, check that all segments in allSurveys are in the ppt.surveys dataframe
     
-    #Should return "character(0)" if all segments in allSurveys are in ppt.surveys
+    # Should return "character(0)" if all segments in allSurveys are in ppt.surveys
     unique(allSurveys$segmentID[!allSurveys$segmentID %in% ppt.surveys$segmentID])
 
   # Add annual precipitation data to survey data
@@ -366,6 +367,7 @@
     
     mids$precip.s <- extract(precip.s,midlocs)
     mids$precip.w <- extract(precip.w,midlocs)
+    mids$temp.max <- extract(temp.max,midlocs)
     mids$elev <- extract(elev,midlocs)
     mids$slope <- extract(slope,midlocs)
     mids$aspect.n <- extract(north,midlocs)
@@ -373,8 +375,11 @@
     mids$rough <- extract(rough,midlocs)
     mids$wash <- extract(wash.impute,midlocs)
     mids$bedrock <- extract(bedrock,midlocs)
+    mids$soilbulk <- extract(soilbulk,midlocs)
+    mids$prock <- extract(prock,midlocs)
     mids$veg.p <- extract(veg.p,midlocs)
     mids$veg.a <- extract(veg.a,midlocs)
+    mids$road.m <- extract(road.m,midlocs)
     mids$road.a <- extract(road.a,midlocs)
     
     # Check that there are no missing values:
@@ -396,11 +401,9 @@
   # Reshape detection distances from long to wide (all observations for a segment on one row)
     
     live <- live[with(live,order(segmentID,dist)),]      
-    
-    # Add observation number (1:nDetects) for each detection on each segment
+    #Add observation number (1:nDetects) for each detection on each segment
     live$obs <- sequence(rle(as.character(live$segmentID))$lengths)   
-    
-    # Reshape, long to wide
+    #Reshape, long to wide
     dists <- dcast(live,segmentID~obs,value.var='dist')
     names(dists)[2:ncol(dists)] <- paste0('dist.',names(dists)[2:ncol(dists)])
 
@@ -462,7 +465,7 @@
     tail(dates)
 
   quantile(surveys$doy,c(0.05,0.10,0.25,0.5,0.75,0.9,0.95))
-    #90% of surveys done with doy = 79 (20-Mar) - 147 (27-May)
+    # 90% of surveys done with doy = 79 (20-Mar) - 147 (27-May)
 
 #-----------------------------------------------------------------------------------------------# 
 # Summarizing survey effort
@@ -482,21 +485,21 @@
     stratayr <- ddply(surveys,.(season,stratum_new),summarize,ntran=length(unique(transectID)),
                       nseg=length(unique(segmentID)))
     summary(stratayr)
-    summary(stratayr[stratayr$season %in% 2001:2003,]) #12-299 transects per strata
-    summary(stratayr[stratayr$season %in% 2004:2020,]) #5-198 transects per strata
+    summary(stratayr[stratayr$season %in% 2001:2003,]) # 12-299 transects per strata
+    summary(stratayr[stratayr$season %in% 2004:2020,]) # 5-198 transects per strata
 
   # Number of detections per segment
-    summary(surveys$nDetects) #mean = 0.1394
+    summary(surveys$nDetects) # mean = 0.1394
     count(surveys$nDetects)
 
   # Number of detections per km
-    sum(surveys$nDetects)/sum(surveys$seg_length/1000) #0.0482
+    sum(surveys$nDetects)/sum(surveys$seg_length/1000) # 0.0482
 
   # Segment lengths 
     ll <- ddply(surveys,.(season),summarize,min=min(seg_length),max=max(seg_length),
                 mean=round(mean(seg_length)),med=median(seg_length))  
     # Median length in 2001: 1600 m
-    # Median length in 2002-2003: 3996 m
+    # Median lengths in 2002-2003: 3996 m
     # Median length in 2004: 2505 m
     # Median lengths in 2005-2020: 2995-3003 m
     
@@ -506,17 +509,17 @@
 
   g0seas <- ddply(g0obs,.(season),summarize,nsite=length(unique(site)),ntort=length(unique(tortid)))
   g0seassite <- ddply(g0obs,.(season,site),summarize,ntort=length(unique(tortid)))
-  summary(g0seassite) #4-23 tortoises per site/yr
+  summary(g0seassite) # 4-23 tortoises per site/yr
 
   # Number of radiomarked tortoises
-    length(unique(g0obs$tortid)) #516
+    length(unique(g0obs$tortid)) # 516
 
   # Mean availability
-    mean(g0obs$visible) #0.7722
-    sd(g0obs$visible)/sqrt(nrow(g0obs)) #0.00175
+    mean(g0obs$visible) # 0.7722
+    sd(g0obs$visible)/sqrt(nrow(g0obs)) # 0.00175
     
 #-----------------------------------------------------------------------------------------------# 
 # Save objects needed for analysis into an .Rdata file 
 #-----------------------------------------------------------------------------------------------#   
 
-  # save(g0obs,surveys,minYear,maxYear,Trunc,W,file='MDT_Data.Rdata')
+  # save(g0obs,surveys,minYear,maxYear,Trunc,W,file='MDT_Data.Rdata'
