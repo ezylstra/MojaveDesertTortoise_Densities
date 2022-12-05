@@ -7,7 +7,7 @@
  ## Relevant files: 
 
   # 1. MDT_Import_Format_Data.R -- import all the files needed for analysis, format data, and create MDT_Data.Rdata
-  # 2. MDT_DensityModel.R -- run model in STAN, summarize results, produce figures (study area map, trends)
+  # 2. MDT_DensityModel.R -- run model in STAN, summarize results, produce figures (trends)
   # 3. MDT_DensityModel.stan -- STAN model
   # 4. MDT_DensityModel_Predictions.R -- predict density of tortoises across their range (produce heat map)
 
@@ -44,7 +44,7 @@
     live_orig <- read.csv('TortoiseData/Tort_Obs_Live.csv',header=TRUE,na.strings=c("NA",""),strip.white=TRUE)
     live_1921 <- read.csv('TortoiseData/Tort_Obs_Live_2019-2021.csv',header=TRUE,na.strings=c("NA",""),strip.white=TRUE)
     
-    #Recovery units associated with established strata (or TCAs)
+    # Recovery units associated with established strata (or TCAs)
     ru <- read.csv('TortoiseData/RUs_TCAs.csv',header=TRUE,strip.white=TRUE)
     
   # Covariate data
