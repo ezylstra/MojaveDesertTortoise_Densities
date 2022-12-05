@@ -7,7 +7,7 @@
  ## Relevant files: 
 
   # 1. MDT_Import_Format_Data.R -- import all the files needed for analysis, format data, and create MDT_Data.Rdata
-  # 2. MDT_DensityModel.R -- run model in STAN, summarize results, produce figures (study area map, trends)
+  # 2. MDT_DensityModel.R -- run model in STAN, summarize results, produce figures (trends)
   # 3. MDT_DensityModel.stan -- STAN model
   # 4. MDT_DensityModel_Predictions.R -- predict density of tortoises across their range (produce heat map)
 
@@ -17,11 +17,11 @@
 # Set working directory, load packages
 #-----------------------------------------------------------------------------------------------# 
 
-  #Set working directory
+  # Set working directory
   
     # setwd()
   
-  #Load packages
+  # Load packages
   
     library(plyr)
     library(rstan)
@@ -76,7 +76,7 @@
 # Format covariates associated with distance-sampling SEGMENTS
 #-----------------------------------------------------------------------------------------------#
     
-  #Transform and standardize potential covariates, then save as separate objects
+  # Transform and standardize potential covariates, then save as separate objects
     # Only transforming variables when necessary to keep scaled values in a reasonable range.
     # Log transforming assumes a change in lower values has a bigger effect than a change at higher values
 
@@ -103,7 +103,7 @@
     # Create quadratic for maximum temperature
     temp.max2 <- temp.max * temp.max
 
-  #Evaluate potential correlations (highlighting those with abs(r) >= 0.5):
+  # Evaluate potential correlations (highlighting those with abs(r) >= 0.5):
     
     round(cor(cbind(precip.w,precip.s,temp.max,
                     slope,rough,aspect.n,aspect.e,
@@ -199,7 +199,7 @@
     n_telem_obs <- length(y_telem)                    #Number of telemetry observations
     n_rmtorts <- max(rmtortID)                        #Number of unique tortoises tracked
 
-   #Distance-sampling data
+   # Distance-sampling data
     
     n_years <- maxYear - minYear + 1                 #Number of years included in trend/study 
     n_recov <- max(recovID)                          #Number of recovery units
@@ -513,7 +513,7 @@
     sort(apply(a.ppt100,1,median))
     mean(summary(apply(a.ppt100,1,mean)))
   
-  #Exploring effect of latitude
+  # Exploring effect of latitude
     
     northz.rng <- seq(min(cov_telem[,'telem.northing']), max(cov_telem[,'telem.northing']), length = 100)
     north.rng <- northz.rng * northing.sd + northing.mn
