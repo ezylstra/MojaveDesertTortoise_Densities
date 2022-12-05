@@ -7,7 +7,7 @@
  ## Relevant files: 
 
   # 1. MDT_Import_Format_Data.R -- import all the files needed for analysis, format data, and create MDT_Data.Rdata
-  # 2. MDT_DensityModel.R -- run model in STAN, summarize results, produce figures (study area map, trends)
+  # 2. MDT_DensityModel.R -- run model in STAN, summarize results, produce figures (trends)
   # 3. MDT_DensityModel.stan -- STAN model
   # 4. MDT_DensityModel_Predictions.R -- predict density of tortoises across their range (produce heat map)
 
@@ -17,11 +17,11 @@
 # Set working directory, load packages
 #-----------------------------------------------------------------------------------------------# 
 
-  #Set working directory
+  # Set working directory
 
     # setwd()
 
-  #Load packages
+  # Load packages
 
     library(terra)
     library(tidyterra)
@@ -173,7 +173,8 @@
     vega.sd <- sd(surveys$veg.a)
     roada.l.sd <- sd(surveys$road.a.log)      
 
-  #Standardize rasters 
+  # Standardize rasters 
+
     precips.z <- (precip.s - precips.mn)/precips.sd
     precipw.z <- (precip.w - precipw.mn)/precipw.sd
     temp.z <- (temp.max - temp.mn)/temp.sd
@@ -185,7 +186,8 @@
     vega.z <- (veg.a - vega.mn)/vega.sd
     roada.z <- (road.a.log - roada.l.mn)/roada.l.sd   
     
-  #Create quadratic for temperature
+  # Create quadratic for temperature
+
     temp.z2 <- temp.z * temp.z
     names(temp.z2) <- "temp.max2"
 
