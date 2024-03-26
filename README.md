@@ -4,7 +4,7 @@
 
 ### Ecosphere [10.1002/ecs2.4448](https://esajournals.onlinelibrary.wiley.com/doi/10.1002/ecs2.4448)
 
-### Code/Data DOI: [![DOI](https://doi.org/10.5281/zenodo.7402616.svg)](https://doi.org/10.5281/zenodo.7402616)
+### Code/Data DOI: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7402616.svg)](https://doi.org/10.5281/zenodo.7402616)
 _______________________________________________________________________________________________________________________________________
 
 ## Abstract:
